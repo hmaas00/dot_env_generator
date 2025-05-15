@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>.env File Generator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f8f8f8;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #1a73e8; /* A bit of Firebase blue */
+        }
+        .variable-inputs {
+            margin-bottom: 20px;
+            border: 1px solid #eee;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .input-row input[type="text"] {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .input-row input[type="text"]:focus {
+             border-color: #1a73e8;
+             outline: none;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        button:hover {
+            background-color: #1558b3;
+        }
+        .remove-btn {
+            background-color: #dc3545; /* Red for remove */
+            padding: 5px 10px;
+            font-size: 0.9em;
+        }
+        .remove-btn:hover {
+             background-color: #c82333;
+        }
+        #add-variable-btn {
+            display: block;
+            margin: 15px auto;
+            background-color: #0f9d58; /* Firebase green */
+        }
+         #add-variable-btn:hover {
+             background-color: #0c7b44;
+         }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>.env File Generator</h1>
+
+        <div id="variable-container">
+            <!-- Variable input rows will be added here by JavaScript -->
+            <div class="variable-inputs">
+                <div class="input-row">
+                    <input type="text" class="env-key" placeholder="Variable Name (e.g., API_KEY)">
+                    <input type="text" class="env-value" placeholder="Variable Value">
+                    <!-- No remove button for the first row -->
+                </div>
+            </div>
+        </div>
+
+        <button id="add-variable-btn">Add Another Variable</button>
+        <button id="generate-btn">Generate .env File</button>
+
+    </div>
+
+    <script>
+        const variableContainer = document.getElementById('variable-container');
+        const addVariableBtn = document.getElementById('add-variable-btn');
+        const generateBtn = document.getElementById('generate-btn');
+
+        // Function to create a new variable input row
+        function createVariableRow() {
+            const variableDiv = document.createElement('div');
+            variableDiv.classList.add('variable-inputs');
+
+            const inputRow = document.createElement('div');
+            inputRow.classList.add('input-row');
+
+            const keyInput = document.createElement('input');
+            keyInput.type = 'text';
+            keyInput.classList.add('env-key');
+            keyInput.placeholder = 'Variable Name (e.g., API_KEY)';
+
+            const valueInput = document.createElement('input');
+            valueInput.type = 'text';
+            valueInput.classList.add('env-value');
+            valueInput.placeholder = 'Variable Value';
+
+            const removeBtn = document.createElement('button');
+            removeBtn.classList.add('remove-btn');
+            removeBtn.innerHTML = '<i class="fa fa-trash"></i>';
+            removeBtn.type = 'button'; // Prevent form submission
+
+            // Add event listener to remove button
+            removeBtn.addEventListener('click', function() {
+                variableContainer.removeChild(variableDiv);
+            });
+
+            inputRow.appendChild(keyInput);
+            inputRow.appendChild(valueInput);
+            inputRow.appendChild(removeBtn); // Add remove button to rows after the first one
+
+            variableDiv.appendChild(inputRow);
+
+            return variableDiv;
+        }
+
+        // Add initial row (already in HTML, but good practice for structure)
+        // const initialRow = createVariableRow(); // No remove button initially
+        // variableContainer.appendChild(initialRow); // Add if not starting with one in HTML
+
+        // Event listener for "Add Another Variable" button
+        addVariableBtn.addEventListener('click', function() {
+            const newRow = createVariableRow();
+            variableContainer.appendChild(newRow);
+        });
+
+        // Event listener for "Generate .env File" button
+        generateBtn.addEventListener('click', function() {
+            const keyInputs = document.querySelectorAll('.env-key');
+            const valueInputs = document.querySelectorAll('.env-value');
+            let envContent = '# Generated .env file\n\n'; // Start with a comment
+
+            for (let i = 0; i < keyInputs.length; i++) {
+                const key = keyInputs[i].value.trim();
+                const value = valueInputs[i].value.trim();
+
+                if (key) { // Only add if key is not empty
+                    // Basic sanitization: if value contains spaces or special characters, wrap in quotes
+                    const formattedValue = value.includes(' ') || /[!@#$%^&*()+=\[\]{};':"\\|,.<>\/?~]/.test(value)
+                        ? `"${value.replace(/"/g, '\\"')}"` // Escape existing quotes
+                        : value;
+
+                    envContent += `${key}=${formattedValue}\n`;
+                }
+            }
+
+            // Create a Blob from the content
+            const blob = new Blob([envContent], { type: 'text/plain' });
+
+            // Create a link element
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = '.env'; // Set the file name
+
+            // Append the link to the body and trigger the click
+            document.body.appendChild(a);
+            a.click();
+
+            // Clean up by removing the link and revoking the object URL
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+        });
+
+    </script>
+
+</body>
+</html>
