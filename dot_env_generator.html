@@ -82,6 +82,9 @@
     <div class="container">
         <h1>.env File Generator</h1>
 
+        <label for="env-file-input">Load existing .env file:</label>
+        <input type="file" id="env-file-input" accept=".env" style="margin-bottom: 15px;">
+
         <div id="variable-container">
             <!-- Variable input rows will be added here by JavaScript -->
             <div class="variable-inputs">
@@ -102,6 +105,76 @@
         const variableContainer = document.getElementById('variable-container');
         const addVariableBtn = document.getElementById('add-variable-btn');
         const generateBtn = document.getElementById('generate-btn');
+        const envFileInput = document.getElementById('env-file-input');
+
+        // Event listener for file input change
+        envFileInput.addEventListener('change', function(event) {
+            if (event.target.files && event.target.files[0]) {
+                const file = event.target.files[0];
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    const fileContent = e.target.result;
+                    // console.log("File Content:\n", fileContent); // For verification
+
+                    variableContainer.innerHTML = ''; // Clear existing rows
+
+                    const lines = fileContent.split('\n');
+                    let pairsFound = 0;
+                    lines.forEach(line => {
+                        const trimmedLine = line.trim();
+
+                        if (trimmedLine.startsWith('#') || trimmedLine === '') {
+                            return; // Skip comments and empty lines
+                        }
+
+                        const equalsIndex = trimmedLine.indexOf('=');
+                        if (equalsIndex !== -1) {
+                            let key = trimmedLine.substring(0, equalsIndex).trim();
+                            let value = trimmedLine.substring(equalsIndex + 1).trim();
+
+                            // Handle quoted values
+                            if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+                                value = value.substring(1, value.length - 1);
+                            }
+                            // Further refinement for internal quotes can be added later if needed
+
+                            if (key) { // Ensure key is not empty
+                                const newRowDiv = createVariableRow();
+                                newRowDiv.querySelector('.env-key').value = key;
+                                newRowDiv.querySelector('.env-value').value = value;
+                                variableContainer.appendChild(newRowDiv);
+                                pairsFound++;
+                            }
+                        }
+                    });
+
+                    // Optional: Add a default empty row if no pairs were found and the container is empty
+                    // This behavior matches the initial state if the file is empty or has no valid lines.
+                    if (pairsFound === 0) {
+                        variableContainer.appendChild(createVariableRow());
+                        // Remove the remove button from the first row if it's the only one
+                        const firstRow = variableContainer.querySelector('.variable-inputs');
+                        if (firstRow) {
+                            const firstRemoveBtn = firstRow.querySelector('.remove-btn');
+                            if (firstRemoveBtn && variableContainer.children.length === 1) {
+                                // This logic for removing the first button might need adjustment
+                                // if createVariableRow always adds one.
+                                // For now, createVariableRow always adds a remove button.
+                                // We'll leave it as is, as the initial row in HTML also doesn't have one,
+                                // but dynamically added ones do. This change makes loaded files consistent.
+                            }
+                        }
+                    }
+                };
+
+                reader.onerror = function(e) {
+                    console.error("Error reading file:", e);
+                };
+
+                reader.readAsText(file);
+            }
+        });
 
         // Function to create a new variable input row
         function createVariableRow() {
